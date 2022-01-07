@@ -247,7 +247,7 @@ Use Dependency Injection to Get Services
 
 If you extend the base ``AbstractController``, you can only access to the most
 common services (e.g ``twig``, ``router``, ``doctrine``, etc.), directly from the
-container via ``$this->container->get()`` or ``$this->get()``.
+container via ``$this->container->get()``.
 Instead, you must use dependency injection to fetch services by
 :ref:`type-hinting action method arguments <controller-accessing-services>` or
 constructor arguments.
@@ -378,7 +378,8 @@ Use Voters to Implement Fine-grained Security Restrictions
 
 If your security logic is complex, you should create custom
 :doc:`security voters </security/voters>` instead of defining long expressions
-inside the ``@Security`` annotation.
+inside the ``#[Security]`` attribute (or in the ``@Security`` annotation if your
+PHP version doesn't support attributes yet).
 
 Web Assets
 ----------

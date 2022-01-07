@@ -30,6 +30,11 @@ The following example shows a typical usage of the cache::
 Symfony supports Cache Contracts, PSR-6/16 and Doctrine Cache interfaces.
 You can read more about these at the :doc:`component documentation </components/cache>`.
 
+.. deprecated:: 5.4
+
+    Support for Doctrine Cache was deprecated in Symfony 5.4
+    and it will be removed in Symfony 6.0.
+
 .. _cache-configuration-with-frameworkbundle:
 
 Configuring Cache with FrameworkBundle
@@ -186,6 +191,11 @@ will create pools with service IDs that follow the pattern ``cache.[type]``.
                 ->defaultPdoProvider('doctrine.dbal.default_connection')
             ;
         };
+
+.. deprecated:: 5.4
+
+    The ``default_doctrine_provider`` option was deprecated in Symfony 5.4 and
+    it will be removed in Symfony 6.0.
 
 .. _cache-create-pools:
 

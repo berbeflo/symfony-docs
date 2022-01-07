@@ -513,6 +513,9 @@ provided by Symfony:
                 # the path of the template to render
                 template:  'static/privacy.html.twig'
 
+                # the response status code (default: 200)
+                statusCode: 200
+
                 # special options defined by Symfony to set the page cache
                 maxAge:    86400
                 sharedAge: 86400
@@ -538,6 +541,9 @@ provided by Symfony:
                 controller="Symfony\Bundle\FrameworkBundle\Controller\TemplateController">
                 <!-- the path of the template to render -->
                 <default key="template">static/privacy.html.twig</default>
+
+                <!-- the response status code (default: 200) -->
+                <default key="statusCode">200</default>
 
                 <!-- special options defined by Symfony to set the page cache -->
                 <default key="maxAge">86400</default>
@@ -567,6 +573,9 @@ provided by Symfony:
                     // the path of the template to render
                     'template'  => 'static/privacy.html.twig',
 
+                    // the response status code (default: 200)
+                    'statusCode' => 200,
+
                     // special options defined by Symfony to set the page cache
                     'maxAge'    => 86400,
                     'sharedAge' => 86400,
@@ -586,6 +595,10 @@ provided by Symfony:
 .. versionadded:: 5.1
 
     The ``context`` option was introduced in Symfony 5.1.
+
+.. versionadded:: 5.4
+
+    The ``statusCode`` option was introduced in Symfony 5.4.
 
 Checking if a Template Exists
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -635,6 +648,17 @@ errors. It's useful to run it before deploying your application to production
 
     # you can also show the deprecated features used in your templates
     $ php bin/console lint:twig --show-deprecations templates/email/
+
+When running the linter inside `GitHub Actions`_, the output is automatically
+adapted to the format required by GitHub, but you can force that format too:
+
+.. code-block:: terminal
+
+    $ php bin/console lint:twig --format=github
+
+.. versionadded:: 5.4
+
+    The ``github`` output format was introduced in Symfony 5.4.
 
 Inspecting Twig Information
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1187,3 +1211,4 @@ Learn more
 .. _`Twig template inheritance`: https://twig.symfony.com/doc/2.x/tags/extends.html
 .. _`Twig block tag`: https://twig.symfony.com/doc/2.x/tags/block.html
 .. _`Cross-Site Scripting`: https://en.wikipedia.org/wiki/Cross-site_scripting
+.. _`GitHub Actions`: https://docs.github.com/en/free-pro-team@latest/actions

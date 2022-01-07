@@ -899,10 +899,16 @@ Response Assertions
     Asserts the response format returned by the
     :method:`Symfony\\Component\\HttpFoundation\\Response::getFormat` method
     is the same as the expected value.
+``assertResponseIsUnprocessable(string $message = '')`` 
+    Asserts the response is unprocessable (HTTP status is 422)
 
 .. versionadded:: 5.3
 
     The ``assertResponseFormatSame()`` method was introduced in Symfony 5.3.
+    
+.. versionadded:: 5.4
+
+    The ``assertResponseIsUnprocessable()`` method was introduced in Symfony 5.4.   
 
 Request Assertions
 ..................
@@ -922,6 +928,19 @@ Browser Assertions
 ``assertBrowserCookieValueSame(string $name, string $expectedValue, string $path = '/', string $domain = null, string $message = '')``
     Asserts the given cookie in the test Client is set to the expected
     value.
+``assertThatForClient(Constraint $constraint, string $message = '')``
+    Asserts the given Constraint in the Client. Useful for using your custom asserts
+    in the same way as built-in asserts (i.e. without passing the Client as argument)::
+
+        // add this method in some custom class imported in your tests
+        protected static function assertMyOwnCustomAssert(): void
+        {
+            self::assertThatForClient(new SomeCustomConstraint());
+        }
+
+.. versionadded:: 5.4
+
+    The ``assertThatForClient()`` method was introduced in Symfony 5.4.
 
 Crawler Assertions
 ..................

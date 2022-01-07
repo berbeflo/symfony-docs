@@ -403,6 +403,8 @@ console::
                 // e.g: '--some-option' => 'option_value',
             ]);
 
+            $commandTester->assertCommandIsSuccessful();
+
             // the output of the command in the console
             $output = $commandTester->getDisplay();
             $this->assertStringContainsString('Username: Wouter', $output);
@@ -418,6 +420,10 @@ call ``setAutoExit(false)`` on it to get the command result in ``CommandTester``
 
     The ``setAutoExit()`` method for single-command applications was introduced
     in Symfony 5.2.
+
+.. versionadded:: 5.4
+
+    The ``assertCommandIsSuccessful()`` method was introduced in Symfony 5.4.
 
 .. tip::
 

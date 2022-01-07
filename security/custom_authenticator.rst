@@ -11,7 +11,7 @@ Authenticators should implement the
 :class:`Symfony\\Component\\Security\\Http\\Authenticator\\AuthenticatorInterface`.
 You can also extend
 :class:`Symfony\\Component\\Security\\Http\\Authenticator\\AbstractAuthenticator`,
-which has a default implementation for the ``createAuthenticatedToken()``
+which has a default implementation for the ``createToken()``
 method that fits most use-cases::
 
     // src/Security/ApiKeyAuthenticator.php
@@ -25,7 +25,7 @@ method that fits most use-cases::
     use Symfony\Component\Security\Core\Exception\CustomUserMessageAuthenticationException;
     use Symfony\Component\Security\Http\Authenticator\AbstractAuthenticator;
     use Symfony\Component\Security\Http\Authenticator\Passport\Badge\UserBadge;
-    use Symfony\Component\Security\Http\Authenticator\Passport\PassportInterface;
+    use Symfony\Component\Security\Http\Authenticator\Passport\Passport;
     use Symfony\Component\Security\Http\Authenticator\Passport\SelfValidatingPassport;
 
     class ApiKeyAuthenticator extends AbstractAuthenticator
@@ -40,7 +40,7 @@ method that fits most use-cases::
             return $request->headers->has('X-AUTH-TOKEN');
         }
 
-        public function authenticate(Request $request): PassportInterface
+        public function authenticate(Request $request): Passport
         {
             $apiToken = $request->headers->get('X-AUTH-TOKEN');
             if (null === $apiToken) {
@@ -227,7 +227,7 @@ using :ref:`the user provider <security-user-providers>`::
                 $this->userRepository = $userRepository;
             }
 
-            public function authenticate(Request $request): PassportInterface
+            public function authenticate(Request $request): Passport
             {
                 // ...
 
@@ -322,11 +322,11 @@ would initialize the passport like this::
     use Symfony\Component\Security\Http\Authenticator\Passport\Badge\CsrfTokenBadge;
     use Symfony\Component\Security\Http\Authenticator\Passport\Badge\UserBadge;
     use Symfony\Component\Security\Http\Authenticator\Passport\Passport;
-    use Symfony\Component\Security\Http\Authenticator\Passport\PassportInterface;
+    use Symfony\Component\Security\Http\Authenticator\Passport\Passport;
 
     class LoginAuthenticator extends AbstractAuthenticator
     {
-        public function authenticate(Request $request): PassportInterface
+        public function authenticate(Request $request): Passport
         {
             $password = $request->request->get('password');
             $username = $request->request->get('username');

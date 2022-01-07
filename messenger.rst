@@ -99,9 +99,6 @@ You're ready! To dispatch the message (and call the handler), inject the
             // will cause the SmsNotificationHandler to be called
             $bus->dispatch(new SmsNotification('Look! I created a message!'));
 
-            // or use the shortcut
-            $this->dispatchMessage(new SmsNotification('Look! I created a message!'));
-
             // ...
         }
     }
@@ -461,6 +458,16 @@ The first argument is the receiver's name (or service id if you routed to a
 custom service). By default, the command will run forever: looking for new messages
 on your transport and handling them. This command is called your "worker".
 
+.. tip::
+
+    To properly stop a worker, throw an instance of
+    :class:`Symfony\\Component\\Messenger\\Exception\\StopWorkerException`.
+
+    .. versionadded:: 5.4
+
+        The :class:`Symfony\\Component\\Messenger\\Exception\\StopWorkerException`
+        class was introduced in Symfony 5.4.
+
 Deploying to Production
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -691,6 +698,72 @@ of the desired grace period in seconds) in order to perform a graceful shutdown:
 
     [program:x]
     stopwaitsecs=20
+
+Stateless Worker
+~~~~~~~~~~~~~~~~
+
+PHP is designed to be stateless, there are no shared resources across different
+requests. In HTTP context PHP cleans everything after sending the response, so
+you can decide to not take care of services that may leak memory.
+
+On the other hand, workers usually sequentially process messages in long-running CLI processes, which don't
+finish after processing a single message. That's why you must be careful about service
+states to prevent information and/or memory leakage.
+
+However, certain Symfony services, such as the Monolog
+:ref:`fingers crossed handler <logging-handler-fingers_crossed>`, leak by design.
+In those cases, use the ``reset_on_message`` transport option to automatically
+reset the service container between two messages:
+
+.. configuration-block::
+
+    .. code-block:: yaml
+
+        # config/packages/messenger.yaml
+        framework:
+            messenger:
+                reset_on_message: true
+                transports:
+                    async:
+                        dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+
+    .. code-block:: xml
+
+        <!-- config/packages/messenger.xml -->
+        <?xml version="1.0" encoding="UTF-8" ?>
+        <container xmlns="http://symfony.com/schema/dic/services"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:framework="http://symfony.com/schema/dic/symfony"
+            xsi:schemaLocation="http://symfony.com/schema/dic/services
+                https://symfony.com/schema/dic/services/services-1.0.xsd
+                http://symfony.com/schema/dic/symfony
+                https://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
+
+            <framework:config>
+                <framework:messenger>
+                    <framework:transport name="async" dsn="%env(MESSENGER_TRANSPORT_DSN)%" reset-on-message="true">
+                    </framework:transport>
+                </framework:messenger>
+            </framework:config>
+        </container>
+
+    .. code-block:: php
+
+        // config/packages/messenger.php
+        use Symfony\Config\FrameworkConfig;
+
+        return static function (FrameworkConfig $framework) {
+            $messenger = $framework->messenger();
+
+            $messenger->transport('async')
+                ->dsn('%env(MESSENGER_TRANSPORT_DSN)%')
+                ->resetOnMessage(true)
+            ;
+        };
+
+.. versionadded:: 5.4
+
+    The ``reset_on_message`` option was introduced in Symfony 5.4.
 
 .. _messenger-retries-failures:
 
@@ -1357,7 +1430,7 @@ The Redis transport DSN may looks like this:
     # .env
     MESSENGER_TRANSPORT_DSN=redis://localhost:6379/messages
     # Full DSN Example
-    MESSENGER_TRANSPORT_DSN=redis://password@localhost:6379/messages/symfony/consumer?auto_setup=true&serializer=1&stream_max_entries=0&dbindex=0
+    MESSENGER_TRANSPORT_DSN=redis://password@localhost:6379/messages/symfony/consumer?auto_setup=true&serializer=1&stream_max_entries=0&dbindex=0&delete_after_ack=true
     # Redis Cluster Example
     MESSENGER_TRANSPORT_DSN=redis://host-01:6379,redis://host-02:6379,redis://host-03:6379,redis://host-04:6379
     # Unix Socket Example
@@ -1371,38 +1444,47 @@ A number of options can be configured via the DSN or via the ``options`` key
 under the transport in ``messenger.yaml``:
 
 
-===================  =====================================  =================================
-Option               Description                            Default
-===================  =====================================  =================================
-stream               The Redis stream name                  messages
-group                The Redis consumer group name          symfony
-consumer             Consumer name used in Redis            consumer
-auto_setup           Create the Redis group automatically?  true
-auth                 The Redis password
-delete_after_ack     If ``true``, messages are deleted      false
-                     automatically after processing them
-delete_after_reject  If ``true``, messages are deleted      true
-                     automatically if they are rejected
-lazy                 Connect only when a connection is      false
-                     really needed
-serializer           How to serialize the final payload     ``Redis::SERIALIZER_PHP``
-                     in Redis (the
-                     ``Redis::OPT_SERIALIZER`` option)
-stream_max_entries   The maximum number of entries which    ``0`` (which means "no trimming")
-                     the stream will be trimmed to. Set
-                     it to a large enough number to
-                     avoid losing pending messages
-tls                  Enable TLS support for the connection  false
-redeliver_timeout    Timeout before retrying a pending      ``3600``
-                     message which is owned by an
-                     abandoned consumer (if a worker died
-                     for some reason, this will occur,
-                     eventually you should retry the
-                     message) - in seconds.
-claim_interval       Interval on which pending/abandoned    ``60000`` (1 Minute)
-                     messages should be checked for to
-                     claim - in milliseconds
-===================  =====================================  =================================
+=======================  =====================================  =================================
+Option                   Description                            Default
+=======================  =====================================  =================================
+stream                   The Redis stream name                  messages
+group                    The Redis consumer group name          symfony
+consumer                 Consumer name used in Redis            consumer
+auto_setup               Create the Redis group automatically?  true
+auth                     The Redis password
+delete_after_ack         If ``true``, messages are deleted      false
+                         automatically after processing them
+delete_after_reject      If ``true``, messages are deleted      true
+                         automatically if they are rejected
+lazy                     Connect only when a connection is      false
+                         really needed
+serializer               How to serialize the final payload     ``Redis::SERIALIZER_PHP``
+                         in Redis (the
+                         ``Redis::OPT_SERIALIZER`` option)
+stream_max_entries       The maximum number of entries which    ``0`` (which means "no trimming")
+                         the stream will be trimmed to. Set
+                         it to a large enough number to
+                         avoid losing pending messages
+tls                      Enable TLS support for the connection  false
+redeliver_timeout        Timeout before retrying a pending      ``3600``
+                         message which is owned by an
+                         abandoned consumer (if a worker died
+                         for some reason, this will occur,
+                         eventually you should retry the
+                         message) - in seconds.
+claim_interval           Interval on which pending/abandoned    ``60000`` (1 Minute)
+                         messages should be checked for to
+                         claim - in milliseconds
+sentinel_persistent_id   String, if null connection is          null
+                         non-persistent.
+sentinel_retry_interval  Int, value in milliseconds             ``0``
+sentinel_read_timeout    Float, value in seconds                ``0``
+                         default indicates unlimited
+sentinel_timeout         Float, value in seconds                ``0``
+                         default indicates unlimited
+sentinel_master          String, if null or empty Sentinel      null
+                         support is disabled
+=======================  =====================================  =================================
 
 .. caution::
 
@@ -1430,6 +1512,17 @@ claim_interval       Interval on which pending/abandoned    ``60000`` (1 Minute)
 .. versionadded:: 5.2
 
     The ``delete_after_reject`` and ``lazy`` options were introduced in Symfony 5.2.
+
+.. versionadded:: 5.4
+
+    The ``sentinel_persistent_id``, ``sentinel_retry_interval``, ``sentinel_read_timeout``,
+    ``sentinel_timeout``, and ``sentinel_master`` options were introduced in Symfony 5.4.
+
+.. deprecated:: 5.4
+
+    Not setting a explicit value for the ``delete_after_ack`` option is
+    deprecated since Symfony 5.4. In Symfony 6.0, the default value of this
+    option changes from ``false`` to ``true``.
 
 In Memory Transport
 ~~~~~~~~~~~~~~~~~~~

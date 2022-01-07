@@ -997,7 +997,7 @@ Option                  Description                                            D
                         and ``$options = ['csv_headers' => ['a', 'b', 'c']]``
                         then ``serialize($data, 'csv', $options)`` returns
                         ``a,b,c\n1,2,3``                                       ``[]``, inferred from input data's keys
-``csv_escape_formulas`` Escapes fields containing formulas by prepending them    ``false``
+``csv_escape_formulas`` Escapes fields containing formulas by prepending them  ``false``
                         with a ``\t`` character
 ``as_collection``       Always returns results as a collection, even if only   ``true``
                         one line is decoded.
@@ -1176,6 +1176,39 @@ to ``true``::
     // ['bar' => 'notNull']
 
 .. _component-serializer-handling-circular-references:
+
+Collecting Type Errors While Denormalizing
+------------------------------------------
+
+When denormalizing a payload to an object with typed properties, you'll get an
+exception if the payload contains properties that don't have the same type as
+the object.
+
+In those situations, use the ``COLLECT_DENORMALIZATION_ERRORS`` option to
+collect all exceptions at once, and to get the object partially denormalized::
+
+    try {
+        $dto = $serializer->deserialize($request->getContent(), MyDto::class, 'json', [
+            DenormalizerInterface::COLLECT_DENORMALIZATION_ERRORS => true,
+        ]);
+    } catch (PartialDenormalizationException $e) {
+        $violations = new ConstraintViolationList();
+        /** @var NotNormalizableValueException */
+        foreach ($e->getErrors() as $exception) {
+            $message = sprintf('The type must be one of "%s" ("%s" given).', implode(', ', $exception->getExpectedTypes()), $exception->getCurrentType());
+            $parameters = [];
+            if ($exception->canUseMessageForUser()) {
+                $parameters['hint'] = $exception->getMessage();
+            }
+            $violations->add(new ConstraintViolation($message, '', $parameters, null, $exception->getPath(), null));
+        };
+
+        return $this->json($violations, 400);
+    }
+
+.. versionadded:: 5.4
+
+    The ``COLLECT_DENORMALIZATION_ERRORS`` option was introduced in Symfony 5.4.
 
 Handling Circular References
 ----------------------------

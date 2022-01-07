@@ -361,7 +361,7 @@ and save it::
 
     // ...
     use App\Entity\Product;
-    use Doctrine\ORM\EntityManagerInterface;
+    use Doctrine\Persistence\ManagerRegistry;
     use Symfony\Component\HttpFoundation\Response;
 
     class ProductController extends AbstractController
@@ -369,11 +369,9 @@ and save it::
         /**
          * @Route("/product", name="create_product")
          */
-        public function createProduct(): Response
+        public function createProduct(ManagerRegistry $doctrine): Response
         {
-            // you can fetch the EntityManager via $this->getDoctrine()
-            // or you can add an argument to the action: createProduct(EntityManagerInterface $entityManager)
-            $entityManager = $this->getDoctrine()->getManager();
+            $entityManager = $doctrine->getManager();
 
             $product = new Product();
             $product->setName('Keyboard');
@@ -408,7 +406,11 @@ Take a look at the previous example in more detail:
 
 .. _doctrine-entity-manager:
 
-* **line 18** The ``$this->getDoctrine()->getManager()`` method gets Doctrine's
+* **line 14** The ``ManagerRegistry $doctrine`` argument tells Symfony to
+  :ref:`inject the Doctrine service <services-constructor-injection>` into the
+  controller method.
+
+* **line 16** The ``$doctrine->getManager()`` method gets Doctrine's
   *entity manager* object, which is the most important object in Doctrine. It's
   responsible for saving objects to, and fetching objects from, the database.
 
@@ -518,11 +520,9 @@ be able to go to ``/product/1`` to see your new product::
         /**
          * @Route("/product/{id}", name="product_show")
          */
-        public function show(int $id): Response
+        public function show(ManagerRegistry $doctrine, int $id): Response
         {
-            $product = $this->getDoctrine()
-                ->getRepository(Product::class)
-                ->find($id);
+            $product = $doctrine->getRepository(Product::class)->find($id);
 
             if (!$product) {
                 throw $this->createNotFoundException(
@@ -573,7 +573,7 @@ job is to help you fetch entities of a certain class.
 
 Once you have a repository object, you have many helper methods::
 
-    $repository = $this->getDoctrine()->getRepository(Product::class);
+    $repository = $doctrine->getRepository(Product::class);
 
     // look for a single Product by its primary key (usually "id")
     $product = $repository->find($id);
@@ -669,9 +669,9 @@ with any PHP model::
         /**
          * @Route("/product/edit/{id}")
          */
-        public function update(int $id): Response
+        public function update(ManagerRegistry $doctrine, int $id): Response
         {
-            $entityManager = $this->getDoctrine()->getManager();
+            $entityManager = $doctrine->getManager();
             $product = $entityManager->getRepository(Product::class)->find($id);
 
             if (!$product) {
@@ -720,8 +720,7 @@ You've already seen how the repository object allows you to run basic queries
 without any work::
 
     // from inside a controller
-    $repository = $this->getDoctrine()->getRepository(Product::class);
-
+    $repository = $doctrine->getRepository(Product::class);
     $product = $repository->find($id);
 
 But what if you need a more complex query? When you generated your entity with
@@ -788,9 +787,7 @@ Now, you can call this method on the repository::
     // from inside a controller
     $minPrice = 1000;
 
-    $products = $this->getDoctrine()
-        ->getRepository(Product::class)
-        ->findAllGreaterThanPrice($minPrice);
+    $products = $doctrine->getRepository(Product::class)->findAllGreaterThanPrice($minPrice);
 
     // ...
 
